@@ -1,0 +1,37 @@
+persistence:
+  enabled: true
+  existingClaim: kestra-storage
+
+postgresql:
+  enabled: true
+  primary:
+    persistence:
+      enabled: true
+      existingClaim: kestra-postgres
+    podSecurityContext:
+      runAsUser: 1000
+      fsGroup: 1000
+    containerSecurityContext:
+      runAsUser: 1000
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: false
+
+elasticsearch:
+  enabled: true
+  volumeClaimTemplate:
+    storageClassName: gp2
+    resources:
+      requests:
+        storage: 10Gi
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+
+service:
+  type: ClusterIP
+
+route:
+  enabled: true
+  host: kestra.apps.YOUR-CLUSTER.DOMAIN
+  tls:
+    termination: edge
