@@ -31,7 +31,4 @@ service:
   type: ClusterIP
 
 route:
-  enabled: true
-  host: kestra.apps.YOUR-CLUSTER.DOMAIN
-  tls:
-    termination: edge
+  enabled: false

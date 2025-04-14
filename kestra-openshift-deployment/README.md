@@ -2,14 +2,14 @@
 
 This deployment package sets up **Kestra**, an open-source orchestration platform, on Red Hat OpenShift with:
 - Persistent storage for Kestra, PostgreSQL, and Elasticsearch
-- Secure HTTPS Route for the UI
+- Secure HTTPS Route for the UI (with TLS edge termination and redirect)
 - Non-root container configuration
 
 ---
 
 ## 📦 Included Files
 
-- `values.yaml`: Helm configuration for non-root execution, persistent storage, and secure route
+- `values.yaml`: Helm configuration for non-root execution and persistent storage
 - `pvc-kestra.yaml`: PVC definitions for Kestra, PostgreSQL, and Elasticsearch
 
 ---
@@ -20,7 +20,6 @@ This deployment package sets up **Kestra**, an open-source orchestration platfor
 - `oc` and `helm` CLIs installed
 - A storage class (e.g., `gp2`, `ocs-storagecluster-ceph-rbd`)
 - Access to the OpenShift Web Console or API
-- A valid domain/cluster route (replace `kestra.apps.YOUR-CLUSTER.DOMAIN` accordingly)
 
 ---
 
@@ -40,12 +39,8 @@ oc apply -f pvc-kestra.yaml
 
 ---
 
-### 3. Update Helm Values (Optional)
-Edit `values.yaml` and set the correct route host:
-```yaml
-route:
-  host: kestra.apps.<your-cluster-domain>
-```
+### 3. (Optional) Customize Helm Values
+Edit `values.yaml` if you want to make changes to storage or enable/disable route creation via Helm.
 
 ---
 
@@ -61,18 +56,26 @@ helm install kestra kestra/kestra \
 
 ---
 
-### 5. Verify the Secure Route
+### 5. Create a Secure Route with TLS and Redirect
+After installation, expose the service with TLS and force HTTPS:
 ```bash
-oc get route kestra
+oc expose svc kestra-ui --name=kestra-web --port=http
+oc patch route kestra-web --type=merge -p '{"spec":{"tls":{"termination":"edge","insecureEdgeTerminationPolicy":"Redirect"}}}'
 ```
-Open the `https://` URL in your browser.
+
+Then view the route:
+```bash
+oc get route kestra-web
+```
+
+Open the HTTPS link in your browser to access Kestra.
 
 ---
 
 ## ✅ Notes
 
 - Containers run as UID 1000 (non-root) and are OpenShift SCC compliant.
-- For production, use external PostgreSQL and Elasticsearch services or operators.
+- For production, consider using external PostgreSQL and Elasticsearch services or operators.
 
 ---
 
@@ -81,6 +84,7 @@ Open the `https://` URL in your browser.
 ```bash
 helm uninstall kestra -n kestra
 oc delete pvc kestra-storage kestra-postgres kestra-elasticsearch -n kestra
+oc delete route kestra-web -n kestra
 ```
 
 ---
@@ -89,4 +93,3 @@ oc delete pvc kestra-storage kestra-postgres kestra-elasticsearch -n kestra
 
 - [Kestra Docs](https://kestra.io/docs/)
 - [Kestra GitHub](https://github.com/kestra-io/kestra)
-
