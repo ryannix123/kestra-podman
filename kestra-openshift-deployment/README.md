@@ -9,8 +9,9 @@ This deployment package sets up **Kestra**, an open-source orchestration platfor
 
 ## 📦 Included Files
 
-- `values.yaml`: Helm configuration for non-root execution and persistent storage
-- `pvc-kestra.yaml`: PVC definitions for Kestra, PostgreSQL, and Elasticsearch
+- `values.yaml`: Helm configuration for OpenShift compliance
+- `pvc-kestra.yaml`: PVC definitions (namespace-agnostic)
+- `README.md`: This guide
 
 ---
 
@@ -26,32 +27,21 @@ This deployment package sets up **Kestra**, an open-source orchestration platfor
 ## 🧰 Step-by-Step Installation
 
 ### 1. Use or Create Your Project
-If you're using the OpenShift Developer Sandbox, your namespace is likely fixed (e.g., `ryan-nix-dev`):
 ```bash
 oc project <your-namespace>
 ```
 
-If you're using your own cluster:
-```bash
-oc new-project <your-namespace>
-```
-
 ---
 
-### 2. Create the PersistentVolumeClaims
-Edit the namespace in `pvc-kestra.yaml` if needed, then run:
+### 2. Apply the PersistentVolumeClaims
+Edit the namespace in `pvc-kestra.yaml` if needed:
 ```bash
 oc apply -f pvc-kestra.yaml -n <your-namespace>
 ```
 
 ---
 
-### 3. (Optional) Customize Helm Values
-Edit `values.yaml` to configure route host or PVC names.
-
----
-
-### 4. Add Kestra Helm Chart and Install
+### 3. Deploy Kestra with Helm
 ```bash
 helm repo add kestra https://kestra-io.github.io/helm-charts
 helm repo update
@@ -63,7 +53,7 @@ helm install kestra kestra/kestra \
 
 ---
 
-### 5. Create a Secure Route with TLS and Redirect
+### 4. Create a Secure Route with TLS and Redirect
 ```bash
 oc expose svc kestra-ui --name=kestra-web --port=http -n <your-namespace>
 oc patch route kestra-web -n <your-namespace> --type=merge -p '{"spec":{"tls":{"termination":"edge","insecureEdgeTerminationPolicy":"Redirect"}}}'
@@ -74,14 +64,15 @@ Then:
 oc get route kestra-web -n <your-namespace>
 ```
 
-Open the HTTPS link in your browser.
+Open the HTTPS URL in your browser.
 
 ---
 
 ## ✅ Notes
 
-- Containers run as UID 1000 (non-root) and are OpenShift SCC compliant.
-- For production, consider using external PostgreSQL and Elasticsearch services or operators.
+- No `runAsUser` or `privileged` settings are used — compliant with restricted SCC
+- OpenShift will assign a safe UID automatically
+- Works on OpenShift Developer Sandbox or full clusters
 
 ---
 
