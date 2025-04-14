@@ -4,12 +4,13 @@ This deployment package sets up **Kestra**, an open-source orchestration platfor
 - Persistent storage for Kestra, PostgreSQL, and Elasticsearch
 - Secure HTTPS Route for the UI (with TLS edge termination and redirect)
 - Non-root container configuration
+- ✅ Docker sidecar disabled for OpenShift compatibility
 
 ---
 
 ## 📦 Included Files
 
-- `values.yaml`: Helm configuration for OpenShift compliance
+- `values.yaml`: Helm configuration for OpenShift compliance and Docker disabled
 - `pvc-kestra.yaml`: PVC definitions (namespace-agnostic)
 - `README.md`: This guide
 
@@ -34,7 +35,6 @@ oc project <your-namespace>
 ---
 
 ### 2. Apply the PersistentVolumeClaims
-Edit the namespace in `pvc-kestra.yaml` if needed:
 ```bash
 oc apply -f pvc-kestra.yaml -n <your-namespace>
 ```
@@ -71,7 +71,7 @@ Open the HTTPS URL in your browser.
 ## ✅ Notes
 
 - No `runAsUser` or `privileged` settings are used — compliant with restricted SCC
-- OpenShift will assign a safe UID automatically
+- Docker sidecar (`dind`) is disabled for compatibility with OpenShift Developer Sandbox
 - Works on OpenShift Developer Sandbox or full clusters
 
 ---

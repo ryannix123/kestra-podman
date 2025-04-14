@@ -20,6 +20,10 @@ elasticsearch:
       requests:
         storage: 10Gi
 
+standalone:
+  docker:
+    enabled: false
+
 service:
   type: ClusterIP
 
