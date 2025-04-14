@@ -57,15 +57,17 @@ podman volume inspect kestra-storage
 
 ### Copying Data to Volumes
 
-If you need to copy existing data into the volumes:
+Once your containers are running, you can copy data directly to them:
 
 ```bash
-# Copy data to PostgreSQL volume
-podman run --rm -v kestra-postgres-data:/volume -v $(pwd)/data/postgres:/source alpine cp -r /source/* /volume/
+# Copy a single file to the PostgreSQL container's volume
+podman cp ~/path/to/yourfile kestra-postgres:/var/lib/postgresql/data/
 
-# Copy data to Kestra storage volume
-podman run --rm -v kestra-storage:/volume -v $(pwd)/data/kestra:/source alpine cp -r /source/* /volume/
+# Copy a directory to the Kestra container's storage (recursive copy)
+podman cp ~/path/to/your/directory kestra:/app/storage/
 ```
+
+Note: Container names may vary based on your setup. Use `podman ps` to verify the correct container names.
 
 ### Managing Volumes
 
@@ -218,14 +220,79 @@ podman-compose -f podman-compose.yml logs -f kestra
 podman logs kestra
 ```
 
-## 7. Creating Event-Driven Workflows
+## 7. Git Integration with Kestra
+
+Kestra offers powerful Git integration capabilities that help you manage infrastructure code effectively:
+
+### Cloning Repositories
+
+You can clone Git repositories directly within Kestra workflows:
+
+```yaml
+id: terraform_from_git
+namespace: infrastructure
+tasks:
+  - id: workspace
+    type: io.kestra.plugin.core.flow.WorkingDirectory
+    tasks:
+      - id: clone_repo
+        type: io.kestra.plugin.git.Clone
+        url: https://github.com/your-org/terraform-configs
+        branch: main
+        
+      - id: terraform_init
+        type: io.kestra.plugin.scripts.shell.Commands
+        commands:
+          - terraform init
+```
+
+### Authentication Options
+
+Kestra supports various authentication methods for Git repositories:
+
+- **Public repositories**: No authentication required
+- **Username/password**: For private repositories
+  ```yaml
+  - id: clone_repo
+    type: io.kestra.plugin.git.Clone
+    url: https://github.com/your-org/private-repo
+    branch: main
+    username: git_username
+    password: "{{ secret('GIT_TOKEN') }}"
+  ```
+- **SSH with private key**: For SSH-based authentication
+  ```yaml
+  - id: clone_repo
+    type: io.kestra.plugin.git.Clone
+    url: git@github.com:your-org/private-repo.git
+    privateKey: "{{ secret('SSH_PRIVATE_KEY') }}"
+    passphrase: "{{ secret('SSH_PASSPHRASE') }}"
+  ```
+
+### Synchronizing Workflows
+
+Kestra can also synchronize flows and namespace files between Git and Kestra, enabling GitOps workflows:
+
+```yaml
+id: sync_from_git
+namespace: system
+tasks:
+  - id: sync
+    type: io.kestra.plugin.git.SyncFlows
+    url: https://github.com/your-org/kestra-flows
+    branch: main
+    targetNamespace: infrastructure
+    delete: true  # Deletes flows not in Git
+```
+
+This capability allows you to treat Git as the single source of truth for your infrastructure automation workflows.
 
 Open your browser and navigate to:
 ```
 http://localhost:8080
 ```
 
-## 8. Upload Workflows to Kestra
+## 8. Creating Event-Driven Workflows
 
 ### Create a Basic Terraform Workflow
 
@@ -290,7 +357,7 @@ tasks:
     message: "Ansible playbook successfully executed!"
 ```
 
-## 9. Event-Driven Integration Ideas
+## 9. Upload Workflows to Kestra
 
 You can upload these workflows via:
 
@@ -298,7 +365,7 @@ You can upload these workflows via:
 2. Using the Kestra CLI
 3. Using the Kestra API
 
-## 10. Managing Kestra and Persistent Storage
+## 10. Event-Driven Integration Ideas
 
 ### File-Based Trigger
 Configure Kestra to watch for file changes:
@@ -332,7 +399,7 @@ tasks:
             - ansible-playbook playbook.yml
 ```
 
-## 11. Upgrading Kestra
+## 11. Managing Kestra and Persistent Storage
 
 ### Stopping Kestra
 ```bash
@@ -399,7 +466,7 @@ You can customize the location when creating volumes with:
 podman volume create --opt device=/path/to/custom/location/postgres-data kestra-postgres-data
 ```
 
-## 12. Troubleshooting
+## 12. Upgrading Kestra
 
 To upgrade your Kestra installation to the latest version, follow these steps:
 
@@ -481,7 +548,7 @@ kestra:
 
 Kestra releases new versions regularly, so check the [official documentation](https://kestra.io/docs/administrator-guide/upgrades) for the latest version information.
 
-## 13. Additional Resources
+## 13. Troubleshooting
 
 - **Logs**: Check container logs with `podman logs kestra`
 - **Database Connection**: Ensure PostgreSQL is running and accessible
@@ -489,7 +556,7 @@ Kestra releases new versions regularly, so check the [official documentation](ht
 - **Volume Permissions**: If you encounter permissions issues with volumes, check SELinux context with `podman volume inspect`
 - **Version Mismatch**: Verify Podman client and VM versions match with `podman --version` and `podman machine info`
 
-## 14. Security Considerations
+## 14. Additional Resources
 
 - [Kestra Documentation](https://kestra.io/docs)
 - [Terraform Documentation](https://www.terraform.io/docs)
