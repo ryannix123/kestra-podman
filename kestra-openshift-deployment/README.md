@@ -16,31 +16,38 @@ This deployment package sets up **Kestra**, an open-source orchestration platfor
 
 ## 🚀 Prerequisites
 
-- OpenShift 4.x cluster
+- OpenShift 4.x cluster (Developer Sandbox compatible)
 - `oc` and `helm` CLIs installed
 - A storage class (e.g., `gp2`, `ocs-storagecluster-ceph-rbd`)
-- Access to the OpenShift Web Console or API
+- An available namespace (e.g., `ryan-nix-dev` or `<your-namespace>`)
 
 ---
 
 ## 🧰 Step-by-Step Installation
 
-### 1. Create the OpenShift Project
+### 1. Use or Create Your Project
+If you're using the OpenShift Developer Sandbox, your namespace is likely fixed (e.g., `ryan-nix-dev`):
 ```bash
-oc new-project kestra
+oc project <your-namespace>
+```
+
+If you're using your own cluster:
+```bash
+oc new-project <your-namespace>
 ```
 
 ---
 
 ### 2. Create the PersistentVolumeClaims
+Edit the namespace in `pvc-kestra.yaml` if needed, then run:
 ```bash
-oc apply -f pvc-kestra.yaml
+oc apply -f pvc-kestra.yaml -n <your-namespace>
 ```
 
 ---
 
 ### 3. (Optional) Customize Helm Values
-Edit `values.yaml` if you want to make changes to storage or enable/disable route creation via Helm.
+Edit `values.yaml` to configure route host or PVC names.
 
 ---
 
@@ -50,25 +57,24 @@ helm repo add kestra https://kestra-io.github.io/helm-charts
 helm repo update
 
 helm install kestra kestra/kestra \
-  --namespace kestra \
+  --namespace <your-namespace> \
   -f values.yaml
 ```
 
 ---
 
 ### 5. Create a Secure Route with TLS and Redirect
-After installation, expose the service with TLS and force HTTPS:
 ```bash
-oc expose svc kestra-ui --name=kestra-web --port=http
-oc patch route kestra-web --type=merge -p '{"spec":{"tls":{"termination":"edge","insecureEdgeTerminationPolicy":"Redirect"}}}'
+oc expose svc kestra-ui --name=kestra-web --port=http -n <your-namespace>
+oc patch route kestra-web -n <your-namespace> --type=merge -p '{"spec":{"tls":{"termination":"edge","insecureEdgeTerminationPolicy":"Redirect"}}}'
 ```
 
-Then view the route:
+Then:
 ```bash
-oc get route kestra-web
+oc get route kestra-web -n <your-namespace>
 ```
 
-Open the HTTPS link in your browser to access Kestra.
+Open the HTTPS link in your browser.
 
 ---
 
@@ -82,9 +88,9 @@ Open the HTTPS link in your browser to access Kestra.
 ## 🧹 Uninstall
 
 ```bash
-helm uninstall kestra -n kestra
-oc delete pvc kestra-storage kestra-postgres kestra-elasticsearch -n kestra
-oc delete route kestra-web -n kestra
+helm uninstall kestra -n <your-namespace>
+oc delete pvc kestra-storage kestra-postgres kestra-elasticsearch -n <your-namespace>
+oc delete route kestra-web -n <your-namespace>
 ```
 
 ---
