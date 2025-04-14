@@ -55,83 +55,33 @@ podman volume inspect kestra-postgres-data
 podman volume inspect kestra-storage
 ```
 
-## 2. Platform-Specific Volume Considerations
+### Copying Data to Volumes
 
-### macOS Volume Considerations
+If you need to copy existing data into the volumes:
 
-When running Podman on macOS, volumes work differently than on Linux because Podman runs inside a virtual machine:
-
-1. Volume paths in macOS:
 ```bash
-# In macOS, volumes are stored inside the Podman VM, not directly on macOS filesystem
-podman machine ssh
-ls -la /var/lib/containers/storage/volumes/
+# Copy data to PostgreSQL volume
+podman run --rm -v kestra-postgres-data:/volume -v $(pwd)/data/postgres:/source alpine cp -r /source/* /volume/
+
+# Copy data to Kestra storage volume
+podman run --rm -v kestra-storage:/volume -v $(pwd)/data/kestra:/source alpine cp -r /source/* /volume/
 ```
 
-2. To mount host directories, you need to specify them when creating the VM:
+### Managing Volumes
+
+View all volumes:
 ```bash
-# Stop existing machine if running
-podman machine stop
-
-# Create new machine with host directory mounted
-podman machine init -v $HOME:/home/user
-
-# Start the machine
-podman machine start
+podman volume ls
 ```
 
-3. Alternative: Use named volumes (recommended approach):
+Remove a volume (only if you want to start fresh - this will delete all data!):
 ```bash
-# Create volume
-podman volume create kestra-postgres-data
-
-# Use in container
-podman run -v kestra-postgres-data:/var/lib/postgresql/data postgres:15
+podman volume rm kestra-postgres-data
 ```
 
-4. Troubleshooting volume access on macOS:
-   - If you get "no such file or directory" errors, recreate the VM with proper mounts
-   - Check the Podman version with `podman --version` and `podman machine info`
-   - Ensure client and VM versions match (if not, recreate VM)
+Note: On macOS and Windows, Podman runs in a virtual machine, so volumes are created inside that VM, not directly on the host filesystem.
 
-### Windows Volume Considerations
-
-When using Podman on Windows, volumes have similar considerations to macOS since Podman runs in a WSL2 VM:
-
-1. Volume paths in Windows:
-```powershell
-# In Windows, volumes are stored inside the Podman VM, not directly on Windows filesystem
-podman machine ssh
-ls -la /var/lib/containers/storage/volumes/
-```
-
-2. To mount host directories, use:
-```powershell
-# Stop existing machine if running
-podman machine stop
-
-# Create new machine with host directory mounted
-podman machine init -v C:\Users\username\data:/data
-
-# Start the machine
-podman machine start
-```
-
-3. Alternative: Use named volumes (recommended approach):
-```powershell
-# Create volume
-podman volume create kestra-postgres-data
-
-# Use in container
-podman run -v kestra-postgres-data:/var/lib/postgresql/data postgres:15
-```
-
-4. For better performance on Windows:
-   - Store data in WSL2 filesystem when possible
-   - Avoid Windows paths with spaces
-   - Use named volumes for best compatibility
-
-## 3. Create a Working Directory
+## 2. Create a Working Directory
 
 ```bash
 # Create directory for compose file
@@ -139,7 +89,9 @@ mkdir -p ~/kestra
 cd ~/kestra
 ```
 
-## 4. Create podman-compose.yml File
+## 3. Create podman-compose.yml File
+
+## 4. Start Kestra
 
 ```bash
 cat > ~/kestra/podman-compose.yml << 'EOF'
@@ -202,7 +154,7 @@ volumes:
 EOF
 ```
 
-## 5. Start Kestra
+## 5. Verify Kestra is Running
 
 Using podman-compose:
 ```bash
@@ -250,7 +202,7 @@ kestra:
   kestra/kestra:latest server standalone
 ```
 
-## 6. Verify Kestra is Running
+## 6. Access the Kestra UI
 
 Check container status:
 ```bash
@@ -266,14 +218,14 @@ podman-compose -f podman-compose.yml logs -f kestra
 podman logs kestra
 ```
 
-## 7. Access the Kestra UI
+## 7. Creating Event-Driven Workflows
 
 Open your browser and navigate to:
 ```
 http://localhost:8080
 ```
 
-## 8. Creating Event-Driven Workflows
+## 8. Upload Workflows to Kestra
 
 ### Create a Basic Terraform Workflow
 
@@ -338,7 +290,7 @@ tasks:
     message: "Ansible playbook successfully executed!"
 ```
 
-## 9. Upload Workflows to Kestra
+## 9. Event-Driven Integration Ideas
 
 You can upload these workflows via:
 
@@ -346,7 +298,7 @@ You can upload these workflows via:
 2. Using the Kestra CLI
 3. Using the Kestra API
 
-## 10. Event-Driven Integration Ideas
+## 10. Managing Kestra and Persistent Storage
 
 ### File-Based Trigger
 Configure Kestra to watch for file changes:
@@ -380,7 +332,7 @@ tasks:
             - ansible-playbook playbook.yml
 ```
 
-## 11. Managing Kestra and Persistent Storage
+## 11. Upgrading Kestra
 
 ### Stopping Kestra
 ```bash
@@ -447,7 +399,7 @@ You can customize the location when creating volumes with:
 podman volume create --opt device=/path/to/custom/location/postgres-data kestra-postgres-data
 ```
 
-## 12. Upgrading Kestra
+## 12. Troubleshooting
 
 To upgrade your Kestra installation to the latest version, follow these steps:
 
@@ -529,7 +481,7 @@ kestra:
 
 Kestra releases new versions regularly, so check the [official documentation](https://kestra.io/docs/administrator-guide/upgrades) for the latest version information.
 
-## 13. Troubleshooting
+## 13. Additional Resources
 
 - **Logs**: Check container logs with `podman logs kestra`
 - **Database Connection**: Ensure PostgreSQL is running and accessible
@@ -537,7 +489,7 @@ Kestra releases new versions regularly, so check the [official documentation](ht
 - **Volume Permissions**: If you encounter permissions issues with volumes, check SELinux context with `podman volume inspect`
 - **Version Mismatch**: Verify Podman client and VM versions match with `podman --version` and `podman machine info`
 
-## 14. Additional Resources
+## 14. Security Considerations
 
 - [Kestra Documentation](https://kestra.io/docs)
 - [Terraform Documentation](https://www.terraform.io/docs)
