@@ -63,7 +63,7 @@ oc get project your-ocp-namespace -o jsonpath='{.metadata.annotations.openshift\
 ### 3. Deploy Kestra via Helm
 
 ```bash
-helm install kestra kestra/kestra   --namespace your-ocp-namespace   --create-namespace   -f values-openshift.yaml
+helm install kestra kestra/kestra   --namespace your-ocp-namespace  -f values-openshift.yaml
 ```
 
 ---
