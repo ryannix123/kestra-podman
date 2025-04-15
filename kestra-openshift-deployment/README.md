@@ -8,7 +8,7 @@ This guide walks you through deploying [Kestra](https://kestra.io) on OpenShift 
 
 - OpenShift 4.x cluster
 - Helm CLI installed
-- A namespace with its own UID range (e.g., `ryan-nix-dev`)
+- A namespace with its own UID range (e.g., `your-ocp-namespace`)
 - Internet access to pull images from Docker Hub
 
 ---
@@ -55,7 +55,7 @@ dind:
 Update the `runAsUser` and `fsGroup` with your namespace’s UID range from:
 
 ```bash
-oc get project ryan-nix-dev -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.uid-range}'
+oc get project your-ocp-namespace -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.uid-range}'
 ```
 
 ---
@@ -63,7 +63,7 @@ oc get project ryan-nix-dev -o jsonpath='{.metadata.annotations.openshift\.io/sa
 ### 3. Deploy Kestra via Helm
 
 ```bash
-helm install kestra kestra/kestra   --namespace ryan-nix-dev   --create-namespace   -f values-openshift.yaml
+helm install kestra kestra/kestra   --namespace your-ocp-namespace   --create-namespace   -f values-openshift.yaml
 ```
 
 ---
@@ -85,7 +85,7 @@ This creates a TLS-secured external route with automatic HTTP → HTTPS redirect
 Get the route:
 
 ```bash
-oc get route kestra -n ryan-nix-dev -o wide
+oc get route kestra -n your-ocp-namespace -o wide
 ```
 
 Visit the URL in your browser.
@@ -94,19 +94,6 @@ Default credentials:
 
 - **Username:** `admin`
 - **Password:** `admin`
-
----
-
-## ✅ Done!
-
-Your Kestra instance is now fully deployed with:
-
-- Non-root SCC compliance
-- PostgreSQL backend
-- TLS-secured UI access
-- Auto-migrated schema via Helm chart
-
-For more, see: [https://kestra.io/docs](https://kestra.io/docs)
 
 ---
 
@@ -127,12 +114,33 @@ image:
 
 3. Upgrade the release:
 ```bash
-helm upgrade kestra kestra/kestra   --namespace ryan-nix-dev   -f values-openshift.yaml
+helm upgrade kestra kestra/kestra   --namespace your-ocp-namespace   -f values-openshift.yaml
 ```
 
 4. Monitor the rollout:
 ```bash
-oc rollout status deployment/kestra-standalone -n ryan-nix-dev
+oc rollout status deployment/kestra-standalone -n your-ocp-namespace
 ```
 
 > ⚠️ Always check [https://kestra.io/releases](https://kestra.io/releases) for breaking changes or migration notes before upgrading.
+
+---
+
+## 🧹 Uninstalling Kestra from OpenShift
+
+To completely remove the Kestra deployment:
+
+```bash
+# Delete the Helm release
+helm uninstall kestra -n your-ocp-namespace
+
+# Optionally delete the namespace (if it's dedicated to Kestra)
+oc delete namespace your-ocp-namespace
+
+# If keeping the namespace, you may want to manually clean up:
+oc delete pvc -n your-ocp-namespace --all
+oc delete configmap -n your-ocp-namespace --all
+oc delete route kestra -n your-ocp-namespace --ignore-not-found
+```
+
+> ⚠️ Deleting the PVCs will remove all persisted data, including Kestra flows and executions.

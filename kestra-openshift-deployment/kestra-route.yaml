@@ -2,7 +2,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: kestra
-  namespace: ryan-nix-dev
+  namespace: your-ocp-namespace
 spec:
   to:
     kind: Service
