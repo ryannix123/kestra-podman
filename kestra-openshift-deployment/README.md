@@ -122,7 +122,7 @@ helm upgrade kestra kestra/kestra   --namespace your-ocp-namespace   -f values-o
 oc rollout status deployment/kestra-standalone -n your-ocp-namespace
 ```
 
-> ⚠️ Always check [https://kestra.io/releases](https://kestra.io/releases) for breaking changes or migration notes before upgrading.
+> ⚠️ Always check [https://kestra.io/releases](https://kestra.io/releases](https://github.com/kestra-io/kestra/releases) for breaking changes or migration notes before upgrading.
 
 ---
 
